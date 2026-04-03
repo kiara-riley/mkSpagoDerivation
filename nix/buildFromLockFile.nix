@@ -1,5 +1,5 @@
-{ mkDerivation, registry, lib }:
-{ spagoLockFile }:
+{ mkDerivation, registry, lib, fetchurl ? null, fetchgit ? null }:
+{ spagoLockFile, gitPackageHashes ? {} }:
 let
   lockFileNix =
     builtins.fromJSON (builtins.readFile spagoLockFile);
@@ -66,7 +66,12 @@ let
         package.rev;
 
       remoteSrc =
-        builtins.fetchGit {
+        if fetchgit != null && gitPackageHashes ? ${name}
+        then fetchgit {
+          inherit url rev;
+          hash = gitPackageHashes.${name};
+        }
+        else builtins.fetchGit {
           inherit url rev name;
         };
     in
@@ -117,7 +122,12 @@ let
         package.version;
 
       remoteSrc =
-        builtins.fetchurl {
+        if fetchurl != null
+        then fetchurl {
+          url = "https://packages.registry.purescript.org/${package.name}/${version}.tar.gz";
+          hash = integrity;
+        }
+        else builtins.fetchurl {
           url = "https://packages.registry.purescript.org/${package.name}/${version}.tar.gz";
           sha256 = integrity;
         };
